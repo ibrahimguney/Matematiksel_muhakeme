@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IZU020 | Mantık ve Matematiksel Düşünme Atölyesi</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;color:#183052;background:#f2f5fb}
+*{box-sizing:border-box}body{margin:0}header{background:linear-gradient(110deg,#142b53,#285ca8);padding:32px max(16px,calc((100% - 900px)/2));color:#fff}
+main{max-width:900px;margin:24px auto;padding:0 16px}.card{background:#fff;border-radius:16px;padding:24px;margin:0 0 18px;box-shadow:0 5px 24px #17284a0b}h1{margin:0 0 8px}h2{margin-top:0}
+.muted{color:#58708c}header .muted{color:#dce8fa}.row{display:flex;gap:14px;flex-wrap:wrap;align-items:center}label{display:block;flex:1;min-width:150px;font-weight:600}
+select{width:100%;margin-top:8px;padding:12px;border-radius:9px;background:#fff;border:1px solid #b4c6de;font:inherit}
+button{padding:12px 18px;border:0;border-radius:10px;background:#215cba;color:#fff;font:inherit;cursor:pointer;margin:8px 5px 4px 0}button:disabled{opacity:.5;cursor:default}
+.option{display:block;width:100%;text-align:left;color:#173359;background:#f7f9fd;border:1px solid #cbd7e6;line-height:1.5}
+.option.selected{border:2px solid #2459bc;background:#eaf2ff}.option.correct{border:2px solid #248856;background:#e4f8ed}.option.wrong{border:2px solid #c64040;background:#ffeded}
+.hidden{display:none!important}#progress{background:#e4eaf3;height:9px;border-radius:9px;overflow:hidden;margin:16px 0}#bar{background:#2765c0;height:100%;width:0}
+#feedback{padding:15px;border-radius:10px;background:#eef5ff;margin-top:14px;line-height:1.6}#question{line-height:1.4}
+.pill{display:inline-block;padding:7px 12px;background:#eaf1ff;color:#1e4e94;border-radius:20px;font-size:14px}
+ul{padding-left:22px}li{margin-bottom:7px}footer{text-align:center;color:#657c95;padding:16px 0 36px}
+</style></head><body>
+<header><h1>🧠 Matematiksel Düşünme ve Mantık Atölyesi</h1><p>IZU020 · İnteraktif sınava hazırlık</p><p class="muted">Gönüllü çalışma • Anında açıklama • Notlandırma yok</p></header>
+<main>
+<section id="setup" class="card"><h2>Çalışmaya başla</h2><p class="muted">Konu ve zorluk düzeyi seçin. Sorular karışık sırayla gelir; yanlışlarınızı tekrar deneyebilirsiniz.</p>
+<div class="row"><label>Konu<select id="topic"><option value="all">Tüm konular</option><option>Önermeler ve bağlaçlar</option><option>Doğruluk tabloları</option><option>Niceleyiciler</option><option>Gerekli ve yeterli koşullar</option><option>İspat yöntemleri</option><option>Aksiyomlar ve sistemler</option></select></label>
+<label>Zorluk<select id="level"><option value="all">Karma</option><option>Temel</option><option>Orta</option><option>İleri</option></select></label>
+<label>Soru sayısı<select id="count"><option>5</option><option selected>10</option><option>15</option><option>20</option></select></label></div>
+<p id="poolInfo" class="muted"></p><button id="start">Teste başla</button></section>
+<section id="quiz" class="card hidden"><div class="row" style="justify-content:space-between"><strong id="counter"></strong><span class="pill" id="score"></span></div><div id="progress"><div id="bar"></div></div><p class="muted" id="meta"></p><h2 id="question"></h2><div id="options"></div><button id="check" disabled>Cevabı kontrol et</button><button id="next" class="hidden">Sonraki soru</button><div id="feedback" class="hidden" role="status"></div></section>
+<section id="result" class="card hidden"><h2>Çalışma tamamlandı</h2><h1 id="finalScore"></h1><p id="finalText"></p><h3>Konu bazında sonuçlar</h3><ul id="breakdown"></ul><button id="retry" class="hidden">Yanlışları tekrar çöz</button><button id="restart">Yeni çalışma başlat</button></section>
+</main><footer>IZU020 · Eğitim amaçlı öz değerlendirme</footer><script>
+const raw=[
+['Önermeler ve bağlaçlar','Temel','Aşağıdakilerden hangisi bir önermedir?',['Kapıyı kapat.','Bugün hava güzel mi?','7 asal sayıdır.','Keşke tatil olsa.'],2,'Önerme doğruluk değeri belirlenebilen bildirme cümlesidir.'],
+['Önermeler ve bağlaçlar','Temel','p doğru, q yanlış ise p ∧ q değeri nedir?',['Doğru','Yanlış','Belirsiz','Her ikisi'],1,'Ve bağlacı ancak iki önerme de doğruysa doğrudur.'],
+['Önermeler ve bağlaçlar','Orta','p → q hangi durumda yanlıştır?',['p ve q doğru','p yanlış, q doğru','p doğru, q yanlış','p ve q yanlış'],2,'Koşullu önerme yalnızca öncül doğru ve sonuç yanlışken yanlıştır.'],
+['Önermeler ve bağlaçlar','Orta','¬(p ∧ q) ifadesine eşdeğer olan hangisidir?',['¬p ∧ ¬q','¬p ∨ ¬q','p ∨ q','p → q'],1,'De Morgan kuralıyla ¬(p ∧ q) ≡ ¬p ∨ ¬q.'],
+['Doğruluk tabloları','Temel','Üç farklı önerme için doğruluk tablosunda kaç satır vardır?',['3','6','8','9'],2,'n değişken için 2ⁿ satır vardır; 2³ = 8.'],
+['Doğruluk tabloları','Orta','p ∨ ¬p nasıl sınıflandırılır?',['Çelişki','Totoloji','Olumsal','Önerme değil'],1,'Dışlanan üçüncü hâl yasası gereği her durumda doğrudur.'],
+['Doğruluk tabloları','İleri','(p → q) ↔ (¬q → ¬p) nedir?',['Totoloji','Çelişki','Yalnız p doğruysa doğru','Yalnız q doğruysa doğru'],0,'Bir koşullu önerme karşıt tersiyle eşdeğerdir.'],
+['Niceleyiciler','Temel','∀x P(x) ifadesindeki ∀ ne demektir?',['En az bir','Her','Hiçbir','Tam bir'],1,'∀, her x için anlamında evrensel niceleyicidir.'],
+['Niceleyiciler','Orta','¬∀x P(x) ile eşdeğer olan hangisidir?',['∀x ¬P(x)','∃x ¬P(x)','¬∃x ¬P(x)','∃x P(x)'],1,'Her biri doğru değildir: en az biri yanlıştır.'],
+['Niceleyiciler','İleri','Gerçel sayılarda ∀x ∃y (y > x) doğru mudur?',['Doğru','Yanlış','Yalnız x pozitifse','Yalnız x tam sayıysa'],0,'Her gerçel x için y=x+1 seçilebilir.'],
+['Gerekli ve yeterli koşullar','Temel','p → q ise q, p için hangi koşuldur?',['Yeterli','Gerekli','Hem gerekli hem yeterli olması zorunlu','İlgisiz'],1,'q, p için gerekli koşuldur; p ise q için yeterlidir.'],
+['Gerekli ve yeterli koşullar','Orta','Bir tam sayının 4 ile bölünmesi, çift olması için ne tür koşuldur?',['Yalnız gerekli','Yalnız yeterli','Gerekli ve yeterli','Hiçbiri'],1,'4’e bölünen her sayı çiftken her çift sayı 4’e bölünmez.'],
+['Gerekli ve yeterli koşullar','İleri','p ↔ q neyi ifade eder?',['p yalnız gereklidir','p yalnız yeterlidir','p ve q birbirleri için gerekli ve yeterlidir','İkisi de her zaman yanlıştır'],2,'Çift yönlü gerektirme iki yönün birlikte doğru olmasıdır.'],
+['İspat yöntemleri','Temel','Bir evrensel iddiayı çürütmek için hangisi yeterlidir?',['Tek doğrulayan örnek','Bir karşı örnek','Bir tanım','Bir aksiyom'],1,'Bir karşı örnek evrensel iddianın yanlışlığını gösterir.'],
+['İspat yöntemleri','Orta','p → q önermesini karşıt tersle kanıtlamak için hangisi ispatlanır?',['q → p','¬p → ¬q','¬q → ¬p','p ∧ q'],2,'Koşullu önerme karşıt tersiyle eşdeğerdir.'],
+['İspat yöntemleri','İleri','√2’nin irrasyonelliği çoğunlukla hangi yöntemle ispatlanır?',['Tümevarım','Çelişki ile ispat','Doğruluk tablosu','Yaklaşık hesap'],1,'√2’nin rasyonel olduğu varsayılıp çelişki elde edilir.'],
+['Aksiyomlar ve sistemler','Temel','Aksiyom nedir?',['İspatlanmış sonuç','İspatsız kabul edilen temel önerme','Yanlış önerme','Sıradan örnek'],1,'Aksiyom bir sistemin temel kabulüdür.'],
+['Aksiyomlar ve sistemler','Orta','Bir aksiyom sisteminin tutarlı olması ne demektir?',['Her önerme kanıtlanır','Bir önerme ve değili birlikte ispatlanamaz','Hiç teorem yoktur','Aksiyom yoktur'],1,'Tutarlı sistemde aynı önerme ile değili birlikte türetilemez.'],
+['Aksiyomlar ve sistemler','İleri','Bir aksiyomun diğerlerinden türetilememesi hangi kavramdır?',['Bağımsızlık','Tamlık','Geçerlilik','Eşdeğerlik'],0,'Bağımsızlık diğer aksiyomlardan çıkarılamama durumudur.'],
+['Aksiyomlar ve sistemler','İleri','Biçimsel sistemde teorem hangisidir?',['İspatsız kabul','Kurallarla ispatlanmış ifade','Herhangi bir soru','Tanımsız kavram'],1,'Teorem aksiyom ve çıkarım kuralları yardımıyla türetilir.']
+];
+const $=id=>document.getElementById(id);let questions=[],answers=[],index=0,selected=null,checked=false,retryMode=false;
+function shuffle(a){let b=[...a];for(let i=b.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b}
+function pool(){return raw.filter(q=>($('topic').value==='all'||q[0]===$('topic').value)&&($('level').value==='all'||q[1]===$('level').value))}
+function updatePool(){let n=pool().length;$('poolInfo').textContent='Seçime uygun '+n+' soru mevcut. İstenen sayı daha büyükse mevcut sorular kullanılır.';$('start').disabled=n===0}
+function begin(qs,retry=false){questions=qs;answers=[];index=0;retryMode=retry;$('setup').classList.add('hidden');$('result').classList.add('hidden');$('quiz').classList.remove('hidden');render()}
+function render(){selected=null;checked=false;let q=questions[index];$('counter').textContent='Soru '+(index+1)+' / '+questions.length;$('score').textContent='Doğru: '+answers.filter(a=>a.good).length;$('bar').style.width=(index/questions.length*100)+'%';$('meta').textContent=q[0]+' · '+q[1];$('question').textContent=q[2];$('options').replaceChildren();let choices=shuffle(q[3].map((text,i)=>({text,i})));for(let [j,opt] of choices.entries()){const b=document.createElement('button');b.className='option';b.textContent=String.fromCharCode(65+j)+') '+opt.text;b.dataset.original=opt.i;b.addEventListener('click',()=>{if(checked)return;selected=opt.i;document.querySelectorAll('.option').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');$('check').disabled=false});$('options').appendChild(b)}$('check').disabled=true;$('check').classList.remove('hidden');$('next').classList.add('hidden');$('feedback').classList.add('hidden')}
+function finish(){let count=answers.filter(a=>a.good).length;$('quiz').classList.add('hidden');$('result').classList.remove('hidden');$('finalScore').textContent=count+' / '+questions.length+' doğru · %'+Math.round(count/questions.length*100);$('finalText').textContent=count===questions.length?'Tebrikler! Tüm yanıtlar doğru.':'Aşağıdaki konularda tekrar çalışabilir ve yanlışlarınızı yeniden çözebilirsiniz.';$('breakdown').replaceChildren();for(let topic of [...new Set(questions.map(q=>q[0]))]){let items=answers.filter(a=>a.q[0]===topic),ok=items.filter(a=>a.good).length;let li=document.createElement('li');li.textContent=topic+': '+ok+'/'+items.length+' (%'+Math.round(100*ok/items.length)+')';$('breakdown').appendChild(li)}$('retry').classList.toggle('hidden',count===questions.length)}
+$('check').addEventListener('click',()=>{if(selected===null||checked)return;checked=true;let q=questions[index],good=selected===q[4];answers.push({q,good});document.querySelectorAll('.option').forEach(b=>{b.disabled=true;let original=Number(b.dataset.original);if(original===q[4])b.classList.add('correct');else if(original===selected)b.classList.add('wrong')});$('feedback').textContent=(good?'✓ Doğru! ':'✗ Yanlış. ')+q[5];$('feedback').classList.remove('hidden');$('score').textContent='Doğru: '+answers.filter(a=>a.good).length;$('check').classList.add('hidden');$('next').classList.remove('hidden');$('next').textContent=index===questions.length-1?'Sonuçları gör':'Sonraki soru'});
+$('next').addEventListener('click',()=>{index++;if(index<questions.length)render();else finish()});
+$('start').addEventListener('click',()=>begin(shuffle(pool()).slice(0,Number($('count').value))));
+$('retry').addEventListener('click',()=>begin(shuffle(answers.filter(a=>!a.good).map(a=>a.q)),true));
+$('restart').addEventListener('click',()=>{$('result').classList.add('hidden');$('setup').classList.remove('hidden');updatePool()});
+$('topic').addEventListener('change',updatePool);$('level').addEventListener('change',updatePool);updatePool();
+</script></body></html>
